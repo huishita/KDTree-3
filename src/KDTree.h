@@ -104,17 +104,17 @@ private:
     // TODO: Add implementation details here.
 	size_t count;
 	struct Node{
-		Node(){ left=right=NULL;}
+		Node(){ left=right=nullptr;}
 		~Node(){ delete left; delete right;}
 		Node(const Point<N>& _key, const ElemType& _value):key(_key), value(_value)
-		{ left = right = NULL; }
+		{ left = right = nullptr; }
 		Point<N> key;
 		ElemType value;
 		Node *left, *right;
 	};
 	Node* root;
 	// sub routine search the exact node
-	// return NULL if pt does not exist
+	// return nullptr if pt does not exist
 	Node* findNode(const Point<N>& pt) const;
 
 	// sub routine for deep copy
@@ -133,7 +133,7 @@ private:
 template <size_t N, typename ElemType>
 KDTree<N, ElemType>::KDTree() : count(0) {
     // Create an empty KDTree
-	root = NULL;
+	root = nullptr;
 }
 
 template <size_t N, typename ElemType>
@@ -206,7 +206,7 @@ bool KDTree<N, ElemType>::empty() const
 template <size_t N, typename ElemType>
 bool KDTree<N, ElemType>::contains(const Point<N>& pt) const
 {
-	return findNode(pt) != NULL;
+	return findNode(pt) != nullptr;
 }
 
 template <size_t N, typename ElemType>
@@ -276,7 +276,7 @@ typename KDTree<N,ElemType>::Node* KDTree<N, ElemType>::findNode(const Point<N>&
 			curNode = curNode->right;
 		dim = (dim+1)%N;
 	}
-	return NULL;
+	return nullptr;
 }
 
 template <size_t N, typename ElemType>
