@@ -116,9 +116,14 @@ private:
 	// sub routine search the exact node
 	// return NULL if pt does not exist
 	Node* findNode(const Point<N>& pt) const;
+
+	// sub routine for deep copy
+	Node* deepcopy(const Node* const src);
+
 	// sub routine used in operator[]
 	// generate node and insert in the tree
 	void insert(Node& node);
+
 	// nearest neighbor search
 	void nnSearch(const Node* const curNode, const Point<N>& key, BoundedPQueue<ElemType>& pQueue, size_t spldim) const;
 };
@@ -138,6 +143,17 @@ KDTree<N, ElemType>::~KDTree() {
 }
 
 template <size_t N, typename ElemType>
+typename KDTree<N, ElemType>::Node* KDTree<N, ElemType>::deepcopy(const Node* const src)
+{
+	Node* ret = new Node(src->key, src->value);
+	if (src->left)
+		ret->left = deepcopy(src->left);
+	if (src->right)
+		ret->right = deepcopy(src->right);
+	return ret;
+}
+
+template <size_t N, typename ElemType>
 KDTree<N, ElemType>::KDTree(const KDTree& rhs)
 {
 	if(rhs.empty())
@@ -147,15 +163,7 @@ KDTree<N, ElemType>::KDTree(const KDTree& rhs)
 	else
 	{
 		count = rhs.size();
-		stack<Node*> dfs;
-		dfs.push(rhs.root);
-		Node* curNode;
-		while(!dfs.empty())
-		{
-			curNode = dfs.pop();
-			root = new Node(curNode->key, curNode->value);
-						
-		}
+		root = deepcopy(rhs.root);
 	}
 }
 
@@ -164,12 +172,15 @@ KDTree<N,ElemType>& KDTree<N, ElemType>::operator=(const KDTree& rhs)
 {
 	if(rhs.empty())
 	{
-		return KDTree();
+		count = 0;
+		root = nullptr;
+		return *this;
 	}
 	else
 	{
-		KDTree kdTree;
-		return kdTree;
+		count = rhs.size();
+		root = deepcopy(rhs.root);
+		return *this;
 	}
 }
 
