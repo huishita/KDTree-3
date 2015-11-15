@@ -14,6 +14,7 @@
 #include "BoundedPQueue.h"
 #include <stdexcept>
 #include <cmath>
+#include <stack>
 
 // "using namespace" in a header file is conventionally frowned upon, but I'm
 // including it here so that you may use things like size_t without having to
@@ -101,26 +102,31 @@ public:
 
 private:
     // TODO: Add implementation details here.
-	size_t splittingDimension;
 	size_t count;
 	struct Node{
 		Node(){ left=right=NULL;}
-		Node(const Point<N>& _key, const ElemType& _value):key(_key), value(_value)//, splittingValue(0)
+		~Node(){ delete left; delete right;}
+		Node(const Point<N>& _key, const ElemType& _value):key(_key), value(_value)
 		{ left = right = NULL; }
 		Point<N> key;
 		ElemType value;
-		/*double splittingValue;*/
 		Node *left, *right;
 	};
 	Node* root;
+	// sub routine search the exact node
+	// return NULL if pt does not exist
 	Node* findNode(const Point<N>& pt) const;
+	// sub routine used in operator[]
+	// generate node and insert in the tree
 	void insert(Node& node);
+	// nearest neighbor search
+	void nnSearch(const Node* const curNode, const Point<N>& key, BoundedPQueue<ElemType>& pQueue, size_t spldim) const;
 };
 
 /** KDTree class implementation details */
 
 template <size_t N, typename ElemType>
-KDTree<N, ElemType>::KDTree() : splittingDimension(0), count(0) {
+KDTree<N, ElemType>::KDTree() : count(0) {
     // Create an empty KDTree
 	root = NULL;
 }
@@ -128,6 +134,43 @@ KDTree<N, ElemType>::KDTree() : splittingDimension(0), count(0) {
 template <size_t N, typename ElemType>
 KDTree<N, ElemType>::~KDTree() {
     // Release all resources KDTree kept
+	delete root;
+}
+
+template <size_t N, typename ElemType>
+KDTree<N, ElemType>::KDTree(const KDTree& rhs)
+{
+	if(rhs.empty())
+	{
+		KDTree();
+	}
+	else
+	{
+		count = rhs.size();
+		stack<Node*> dfs;
+		dfs.push(rhs.root);
+		Node* curNode;
+		while(!dfs.empty())
+		{
+			curNode = dfs.pop();
+			root = new Node(curNode->key, curNode->value);
+						
+		}
+	}
+}
+
+template <size_t N, typename ElemType>
+KDTree<N,ElemType>& KDTree<N, ElemType>::operator=(const KDTree& rhs)
+{
+	if(rhs.empty())
+	{
+		return KDTree();
+	}
+	else
+	{
+		KDTree kdTree;
+		return kdTree;
+	}
 }
 
 template <size_t N, typename ElemType>
@@ -152,7 +195,7 @@ bool KDTree<N, ElemType>::empty() const
 template <size_t N, typename ElemType>
 bool KDTree<N, ElemType>::contains(const Point<N>& pt) const
 {
-	return (findNode(pt) != NULL);
+	return findNode(pt) != NULL;
 }
 
 template <size_t N, typename ElemType>
@@ -309,7 +352,67 @@ const ElemType& KDTree<N, ElemType>::at(const Point<N>& pt) const
 template <size_t N, typename ElemType>
 ElemType KDTree<N, ElemType>::kNNValue(const Point<N>& key, size_t k) const
 {
-	ElemType foo;
-	return foo;
+	BoundedPQueue<ElemType> knn(k);
+	nnSearch(root, key, knn, 0);
+	ElemType* elems = new ElemType[k];
+	size_t* count = new size_t[k];
+	for(int i=0; i<k; i++)
+		count[i] = 0;
+	size_t idx=0, maxCount=0;
+	ElemType tmp, mostFrequent;
+	bool found;
+	// find most frequently occurring value
+	while(!knn.empty())
+	{
+		tmp = knn.dequeueMin();
+		found = false;
+		for(size_t k=0; k<idx; k++)
+		{
+			if(elems[k] == tmp)
+			{
+				count[k]++;
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+		{
+			elems[idx] = tmp;
+			count[idx++] = 1;
+		}
+	}
+	for(size_t i=0; i<idx; i++)
+	{
+		if(maxCount < count[i])
+		{
+			maxCount = count[i];
+			mostFrequent = ElemType(elems[i]);
+		}
+	}
+	delete[] count;
+	delete[] elems;
+	return mostFrequent;
+}
+
+template <size_t N, typename ElemType>
+void KDTree<N, ElemType>::nnSearch(const Node* const curNode, const Point<N>& key, BoundedPQueue<ElemType>& pQueue, size_t spldim) const
+{
+	if(!curNode)
+		return;
+	pQueue.enqueue(curNode->value, Distance(curNode->key, key));
+	if(key[spldim] < curNode->key[spldim])
+	{
+		nnSearch(curNode->left, key, pQueue, (spldim+1)%N);
+		if( pQueue.size() < pQueue.maxSize() ||
+			fabs(curNode->key[spldim] - key[spldim]) < pQueue.worst() )
+			nnSearch(curNode->right, key, pQueue, (spldim+1)%N);
+	}
+	else
+	{
+		nnSearch(curNode->right, key, pQueue, (spldim+1)%N);
+		if( pQueue.size() < pQueue.maxSize() ||
+			fabs(curNode->key[spldim] - key[spldim]) < pQueue.worst() )
+			nnSearch(curNode->left, key, pQueue, (spldim+1)%N);
+	}
 }
 #endif // KDTREE_INCLUDED
