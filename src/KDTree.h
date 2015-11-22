@@ -9,12 +9,12 @@
 
 #ifndef KDTREE_INCLUDED
 #define KDTREE_INCLUDED
-
+#include <GL/freeglut.h>
 #include "Point.h"
 #include "BoundedPQueue.h"
 #include <stdexcept>
 #include <cmath>
-#include <stack>
+#include <limits>
 
 // "using namespace" in a header file is conventionally frowned upon, but I'm
 // including it here so that you may use things like size_t without having to
@@ -101,6 +101,15 @@ public:
 	// chosen.
 	ElemType kNNValue(const Point<N>& key, size_t k) const;
 
+	// Traverse the kd-tree in-order
+	void inOrderTraverse(bool draw = false) const;
+
+	// Draw operations for openGL to visualize the tree
+	void VisualizeBBox() const;
+
+	const Point<N>* min(size_t dim) const;
+	const Point<N>* max(size_t dim) const;
+
 private:
 	// TODO: Add implementation details here.
 	size_t count;
@@ -127,6 +136,9 @@ private:
 	// generate node and insert in the tree
 	void insert(Node& node);
 
+	// inorder traversal sub routine
+	void inorder(const Node* child, bool draw = false) const;
+
 	// nearest neighbor search
 	void nnSearch(const Node* const curNode, const Point<N>& key, BoundedPQueue<ElemType>& pQueue, size_t spldim) const;
 
@@ -137,6 +149,10 @@ private:
 			return left.first[0] < right.first[0];
 		}
 	}comp;
+
+	// for finding min and max
+	const Point<N>* findMin(const Node* node, size_t dim, size_t cd) const;
+	const Point<N>* findMax(const Node* node, size_t dim, size_t cd) const;
 };
 
 /** KDTree class implementation details */
@@ -451,4 +467,124 @@ void KDTree<N, ElemType>::nnSearch(const Node* const curNode, const Point<N>& ke
 			nnSearch(curNode->left, key, pQueue, (spldim + 1) % N);
 	}
 }
+
+template<size_t N, typename ElemType >
+void KDTree<N, ElemType>::inOrderTraverse(bool draw) const
+{
+	if (draw)
+		glVertex3d(root->key[0], root->key[1], root->key[2]);
+	inorder(root, draw);
+}
+
+template<size_t N, typename ElemType >
+void KDTree<N, ElemType>::inorder(const Node* child, bool draw) const
+{
+	if (child->left)
+		inorder(child->left, draw);
+	// print node
+	if (draw)
+		glVertex3d(child->key[0], child->key[1], child->key[2]);
+
+	if (child->right)
+		inorder(child->right, draw);
+}
+
+template<size_t N, typename ElemType >
+void KDTree<N, ElemType>::VisualizeBBox() const
+{
+
+}
+
+template<size_t N, typename ElemType >
+inline const Point<N>* KDTree<N, ElemType>::min(size_t dim) const
+{
+	return findMin(root, dim, 0);
+}
+
+template<size_t N, typename ElemType >
+inline const Point<N>* KDTree<N, ElemType>::max(size_t dim) const
+{
+	return findMax(root, dim, 0);
+}
+
+template<size_t N, typename ElemType >
+const Point<N>* KDTree<N, ElemType>::findMin(const Node* node, size_t dim, size_t cd) const
+{
+	if (!node)
+		return nullptr;
+	if (cd == dim)
+	{
+		if (node->left)
+			return findMin(node->left, dim, (cd + 1) % N);
+		else
+			return &node->key;
+	}
+	else
+	{
+		const Point<N>* l = findMin(node->left, dim, (cd + 1) % N);
+		const Point<N>* r = findMin(node->right, dim, (cd + 1) % N);
+		double lvalue, rvalue;
+		if (!l)
+			lvalue = numeric_limits<float>::max();
+		else
+			lvalue = (*l)[dim];
+		if (!r)
+			rvalue = numeric_limits<float>::max();
+		else
+			rvalue = (*r)[dim];
+		if (lvalue < rvalue && lvalue < node->key[dim])
+		{
+			return l;
+		}
+		else if ( rvalue < node->key[dim])
+		{
+			return r;
+		}
+		else
+		{
+			return &node->key;
+		}
+	}
+}
+
+template<size_t N, typename ElemType >
+const Point<N>* KDTree<N, ElemType>::findMax(const Node* node, size_t dim, size_t cd) const
+{
+	if (!node)
+		return nullptr;
+	if (cd == dim)
+	{
+		if (node->right)
+			return findMax(node->right, dim, (cd + 1) % N);
+		else
+			return &node->key;
+	}
+	else
+	{
+		const Point<N>* l = findMax(node->left, dim, (cd + 1) % N);
+		const Point<N>* r = findMax(node->right, dim, (cd + 1) % N);
+		double lvalue, rvalue;
+		if (!l)
+			lvalue = numeric_limits<double>::min();
+		else
+			lvalue = (*l)[dim];
+		if (!r)
+			rvalue = numeric_limits<double>::min();
+		else
+			rvalue = (*r)[dim];
+		if (lvalue > rvalue && lvalue > node->key[dim])
+		{
+			return l;
+		}
+		else if (rvalue > node->key[dim])
+		{
+			return r;
+		}
+		else
+		{
+			return &node->key;
+		}
+	}
+}
+
 #endif // KDTREE_INCLUDED
