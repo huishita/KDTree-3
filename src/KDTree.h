@@ -105,7 +105,7 @@ public:
 	void inOrderTraverse(bool draw = false) const;
 
 	// Draw operations for openGL to visualize the tree
-	void VisualizeBBox(const Point<N>& minP, const Point<N>& maxP, size_t cd, size_t lv, size_t maxLv) const;
+	void VisualizeBBox(size_t lv, size_t maxLv) const;
 
 	const Point<N>* min(size_t dim) const;
 	const Point<N>* max(size_t dim) const;
@@ -157,6 +157,12 @@ private:
 
 	// helper function
 	void renderCube(const Point<N>& minp, const Point<N>& maxp) const;
+
+	// void compute bounding box of the tree
+	void computeBBox(Node* node, const Point<N>& bmin, const Point<N>& bmax, size_t dim);
+
+	// visualize helper function
+	void renderBBox(const Node* node, size_t lv, size_t maxLv) const;
 };
 
 /** KDTree class implementation details */
@@ -179,6 +185,8 @@ KDTree<N, ElemType>::KDTree(vector < pair<Point<N>, ElemType> >& pointCloud) : c
 		insert(pointCloud[i].first, pointCloud[i].second);
 	for (size_t i = median + 1; i < len; i++)
 		insert(pointCloud[i].first, pointCloud[i].second);
+
+	computeBBox(root, Point<N>(), Point<N>(), 0);
 }
 
 template <size_t N, typename ElemType>
@@ -487,16 +495,84 @@ void KDTree<N, ElemType>::inorder(const Node* child, bool draw) const
 		inorder(child->left, draw);
 	// print node
 	if (draw)
+	{
 		glVertex3d(child->key[0], child->key[1], child->key[2]);
+	}
+		
 
 	if (child->right)
 		inorder(child->right, draw);
 }
 
 template<size_t N, typename ElemType >
-void KDTree<N, ElemType>::VisualizeBBox(const Point<N>& minP, const Point<N>& maxP, size_t cd, size_t lv, size_t maxLv) const
+void KDTree<N, ElemType>::VisualizeBBox(size_t lv, size_t maxLv) const
 {
+	renderBBox(root, lv, maxLv);
+}
 
+template<size_t N, typename ElemType >
+void KDTree<N, ElemType>::renderBBox(const Node* node, size_t lv, size_t maxLv) const
+{
+	if (lv == maxLv)
+	{
+		renderCube(node->Bmin, node->Bmax);
+		return;
+	}
+	if (node->left)
+		renderBBox(node->left, lv + 1, maxLv);
+	if (node->right)
+		renderBBox(node->right, lv + 1, maxLv);
+	if (!node->left || !node->right)
+		renderCube(node->Bmin, node->Bmax);
+}
+
+template<size_t N, typename ElemType >
+void KDTree<N, ElemType>::computeBBox(Node* node, const Point<N>& bmin, const Point<N>& bmax, size_t dim)
+{
+	if (!node)
+		return;
+
+	if (node == root)
+	{
+		Point<N> Bmin, Bmax;
+		Bmin[0] = (*min(0))[0];
+		Bmin[1] = (*min(1))[1];
+		Bmin[2] = (*min(2))[2];
+		Bmax[0] = (*max(0))[0];
+		Bmax[1] = (*max(1))[1];
+		Bmax[2] = (*max(2))[2];
+		node->Bmin = Bmin;
+		node->Bmax = Bmax;
+		if (node->left)
+		{
+			Point<N> leftMax(Bmax);
+			leftMax[0] = node->key[0];
+			computeBBox(node->left, Bmin, leftMax, (dim + 1) % N);
+		}
+		if (node->right)
+		{
+			Point<N> rightMin(Bmin);
+			rightMin[0] = node->key[0];
+			computeBBox(node->right, rightMin, Bmax, (dim + 1) % N);
+		}
+	}
+	else
+	{
+		node->Bmin = bmin;
+		node->Bmax = bmax;
+		if (node->left)
+		{
+			Point<N> leftMax(bmax);
+			leftMax[dim] = node->key[dim];
+			computeBBox(node->left, bmin, leftMax, (dim + 1) % N);
+		}
+		if (node->right)
+		{
+			Point<N> rightMin(bmin);
+			rightMin[dim] = node->key[dim];
+			computeBBox(node->right, rightMin, bmax, (dim + 1) % N);
+		}
+	}
 }
 
 template<size_t N, typename ElemType>

@@ -10,6 +10,7 @@
 #define POINT_INCLUDED
 
 #include <cmath>
+#include <cstdlib>
 
 template <size_t N>
 class Point {
@@ -21,6 +22,10 @@ public:
     // elements of the Point.
     typedef double* iterator;
     typedef const double* const_iterator;
+
+	Point();
+	Point(const Point<N>& rhs);
+	Point& operator=(const Point<N>& rhs);
     
     // size_t size() const;
     // Usage: for (size_t i = 0; i < myPoint.size(); ++i)
@@ -76,6 +81,26 @@ bool operator!=(const Point<N>& one, const Point<N>& two);
 /** Point class implementation details */
 
 #include <algorithm>
+
+template <size_t N>
+Point<N>::Point()
+{
+	for (size_t i = 0; i < N; i++)
+		coords[i] = 0.0;
+}
+
+template <size_t N>
+Point<N>::Point(const Point<N>& rhs)
+{
+	memcpy(coords, rhs.coords, sizeof(double)*N);
+}
+
+template <size_t N>
+Point<N>& Point<N>::operator=(const Point<N>& rhs)
+{
+	memcpy(coords, rhs.coords, sizeof(double)*N);
+	return *this;
+}
 
 template <size_t N>
 size_t Point<N>::size() const {
