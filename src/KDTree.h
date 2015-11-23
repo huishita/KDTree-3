@@ -105,7 +105,7 @@ public:
 	void inOrderTraverse(bool draw = false) const;
 
 	// Draw operations for openGL to visualize the tree
-	void VisualizeBBox() const;
+	void VisualizeBBox(const Point<N>& minP, const Point<N>& maxP, size_t cd, size_t lv, size_t maxLv) const;
 
 	const Point<N>* min(size_t dim) const;
 	const Point<N>* max(size_t dim) const;
@@ -121,6 +121,7 @@ private:
 			left = right = nullptr;
 		}
 		Point<N> key;
+		Point<N> Bmin, Bmax;
 		ElemType value;
 		Node *left, *right;
 	};
@@ -153,6 +154,9 @@ private:
 	// for finding min and max
 	const Point<N>* findMin(const Node* node, size_t dim, size_t cd) const;
 	const Point<N>* findMax(const Node* node, size_t dim, size_t cd) const;
+
+	// helper function
+	void renderCube(const Point<N>& minp, const Point<N>& maxp) const;
 };
 
 /** KDTree class implementation details */
@@ -490,9 +494,56 @@ void KDTree<N, ElemType>::inorder(const Node* child, bool draw) const
 }
 
 template<size_t N, typename ElemType >
-void KDTree<N, ElemType>::VisualizeBBox() const
+void KDTree<N, ElemType>::VisualizeBBox(const Point<N>& minP, const Point<N>& maxP, size_t cd, size_t lv, size_t maxLv) const
 {
 
+}
+
+template<size_t N, typename ElemType>
+void KDTree<N, ElemType>::renderCube(const Point<N>& minp, const Point<N>& maxp) const
+{
+	glBegin(GL_LINE_LOOP);
+	// bottom
+	glVertex3d(minp[0], minp[1], minp[2]);
+	glVertex3d(maxp[0], minp[1], minp[2]);
+	glVertex3d(maxp[0], minp[1], maxp[2]);
+	glVertex3d(minp[0], minp[1], maxp[2]);
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	// front
+	glVertex3d(minp[0], minp[1], minp[2]);
+	glVertex3d(maxp[0], minp[1], minp[2]);
+	glVertex3d(maxp[0], maxp[1], minp[2]);
+	glVertex3d(minp[0], maxp[1], minp[2]);
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	// top
+	glVertex3d(minp[0], maxp[1], minp[2]);
+	glVertex3d(maxp[0], maxp[1], minp[2]);
+	glVertex3d(maxp[0], maxp[1], maxp[2]);
+	glVertex3d(minp[0], maxp[1], maxp[2]);
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	// BACK
+	glVertex3d(maxp[0], maxp[1], maxp[2]);
+	glVertex3d(minp[0], maxp[1], maxp[2]);
+	glVertex3d(minp[0], minp[1], maxp[2]);
+	glVertex3d(maxp[0], minp[1], maxp[2]);
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	// LEFT
+	glVertex3d(minp[0], minp[1], minp[2]);
+	glVertex3d(minp[0], maxp[1], minp[2]);
+	glVertex3d(minp[0], maxp[1], maxp[2]);
+	glVertex3d(minp[0], minp[1], maxp[2]);
+	glEnd();
+	glBegin(GL_LINE_LOOP);
+	// RIGHT
+	glVertex3d(maxp[0], minp[1], minp[2]);
+	glVertex3d(maxp[0], minp[1], maxp[2]);
+	glVertex3d(maxp[0], maxp[1], maxp[2]);
+	glVertex3d(maxp[0], maxp[1], minp[2]);
+	glEnd();
 }
 
 template<size_t N, typename ElemType >
