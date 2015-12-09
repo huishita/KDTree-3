@@ -59,7 +59,8 @@
 #include <algorithm>
 #include <limits>
 
-using namespace std;
+using std::size_t;
+using std::multimap;
 
 template <typename T>
 class BoundedPQueue {

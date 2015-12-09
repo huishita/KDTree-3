@@ -19,7 +19,8 @@
 // "using namespace" in a header file is conventionally frowned upon, but I'm
 // including it here so that you may use things like size_t without having to
 // type std::size_t every time.
-using namespace std;
+using std::pair;
+using std::vector;
 
 template <size_t N, typename ElemType>
 class KDTree {
